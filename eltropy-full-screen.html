@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eltropy Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --sb: #161b3a;
+  --sb-3: #1c2245;
+  --sb-active: #2a3160;
+  --sb-border: rgba(255,255,255,0.07);
+  --sb-text: #8890bb;
+  --sb-muted: #4a527a;
+  --accent: #6b77f0;
+  --badge-red: #ef4444;
+  --bg: #f5f6fa;
+  --white: #ffffff;
+  --border: #e8eaf2;
+  --text: #1a1d3a;
+  --text-med: #5a5f7a;
+  --text-muted: #9496ab;
+  --green: #16a34a;
+  --red: #dc2626;
+  --purple: #7c3aed;
+  --font: 'Outfit', sans-serif;
+}
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); }
+body { display: flex; overflow: hidden; }
+
+/* ══════════════ SIDEBAR ══════════════ */
+#sidebar {
+  width: 224px; min-width: 224px; background: var(--sb);
+  height: 100vh; display: flex; flex-direction: column;
+  position: relative; z-index: 20; transition: width 0.25s ease, min-width 0.25s ease;
+}
+#sidebar.collapsed { width: 56px; min-width: 56px; }
+
+.sb-toggle {
+  position: absolute; top: 50%; right: -11px; transform: translateY(-50%);
+  width: 22px; height: 48px; background: var(--sb-3);
+  border: 1px solid rgba(255,255,255,0.1); border-left: none;
+  border-radius: 0 8px 8px 0; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 30; color: var(--sb-text); font-size: 14px; user-select: none;
+}
+#sidebar.collapsed .sb-toggle { border-left: 1px solid rgba(255,255,255,0.1); border-right: none; border-radius: 8px 0 0 8px; right: auto; left: -11px; }
+
+.nav-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px 0 12px; scrollbar-width: none; }
+.nav-scroll::-webkit-scrollbar { display: none; }
+
+/* Flat item */
+.ni {
+  display: flex; align-items: center; gap: 9px; padding: 16px 12px;
+  cursor: pointer; position: relative; margin: 2px 8px; border-radius: 10px;
+  transition: background 0.15s; white-space: nowrap; overflow: hidden;
+}
+.ni:hover { background: rgba(255,255,255,0.04); }
+.ni.active { background: var(--sb-active); border: 0.5px solid rgba(107,119,240,0.4); }
+.ni.active::before {
+  content: ''; position: absolute; left: 0; top: 7px; bottom: 7px;
+  width: 3px; background: var(--accent); border-radius: 0 3px 3px 0; margin-left: -8px;
+}
+.ni-icon { width: 17px; height: 17px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--sb-text); }
+.ni.active .ni-icon, .ni:hover .ni-icon { color: #a8b1ff; }
+.ni-text { font-size: 14px; color: var(--sb-text); flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.ni.active .ni-text { color: #e8eaf6; font-weight: 500; }
+.ni:hover .ni-text { color: #c8cadf; }
+.bdot { width: 17px; height: 17px; border-radius: 50%; background: var(--badge-red); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; }
+.ndiv { height: 1px; background: var(--sb-border); margin: 5px 12px; }
+
+/* Accordion */
+.acc-h {
+  display: flex; align-items: center; gap: 9px; padding: 16px 12px;
+  cursor: pointer; position: relative; margin: 2px 8px; border-radius: 10px;
+  transition: background 0.15s; white-space: nowrap; overflow: hidden;
+}
+.acc-h:hover { background: rgba(255,255,255,0.04); }
+.acc-h .ni-icon { color: var(--sb-text); }
+.acc-h:hover .ni-icon, .acc-h.open .ni-icon { color: #a8b1ff; }
+.acc-h .ni-text { color: var(--sb-text); }
+.acc-h:hover .ni-text, .acc-h.open .ni-text { color: #e8eaf6; font-weight: 500; }
+.chev { flex-shrink: 0; color: var(--sb-muted); transition: transform 0.22s; margin-left: auto; }
+.acc-h.open .chev { transform: rotate(180deg); }
+.new-tag { font-size: 8px; font-weight: 700; background: #14532d; color: #4ade80; padding: 1px 5px; border-radius: 4px; flex-shrink: 0; }
+
+.acc-b { display: none; flex-direction: column; padding-left: 20px; margin: 0 8px; position: relative; }
+.acc-b.open { display: flex; }
+.acc-b::before { content: ''; position: absolute; left: 20px; top: 4px; bottom: 4px; width: 1.5px; background: rgba(107,119,240,0.25); border-radius: 2px; }
+.si {
+  display: flex; align-items: flex-start; padding: 12px 10px 12px 16px;
+  cursor: pointer; border-radius: 10px; transition: background 0.15s; margin: 2px 0;
+}
+.si:hover { background: rgba(255,255,255,0.04); }
+.si.active { background: var(--sb-active); border: 0.5px solid rgba(107,119,240,0.4); }
+.si-text { font-size: 14px; color: var(--sb-text); line-height: 1.3; }
+.si.active .si-text { color: #e8eaf6; font-weight: 600; }
+.si:hover .si-text { color: #c8cadf; }
+.si-meta { font-size: 10px; color: var(--sb-muted); margin-top: 2px; }
+
+/* Collapsed icon strip */
+#sidebar.collapsed .ni-text,
+#sidebar.collapsed .acc-h .ni-text,
+#sidebar.collapsed .new-tag,
+#sidebar.collapsed .chev,
+#sidebar.collapsed .bdot,
+#sidebar.collapsed .acc-b,
+#sidebar.collapsed .ndiv { display: none; }
+#sidebar.collapsed .ni, #sidebar.collapsed .acc-h {
+  justify-content: center; padding: 8px 0; margin: 1px 8px;
+}
+
+/* ── FLYOUT (collapsed hover) ── */
+.flyout {
+  display: none;
+  position: fixed;
+  left: 58px;
+  min-width: 220px;
+  background: #1e2450;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+  padding: 16px 12px 12px;
+  z-index: 999;
+  pointer-events: auto;
+}
+.flyout-title {
+  font-size: 16px; font-weight: 600; color: #e8eaf6;
+  padding: 0 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 8px;
+}
+.flyout-item {
+  padding: 10px 12px; border-radius: 10px; font-size: 14px;
+  color: #8890bb; cursor: pointer; transition: background 0.15s;
+}
+.flyout-item:hover { background: rgba(255,255,255,0.06); color: #e8eaf6; }
+.flyout-item.active { background: #2a3160; color: #e8eaf6; font-weight: 600; border: 0.5px solid rgba(107,119,240,0.4); }
+
+/* Only show flyouts when sidebar is collapsed and acc-h is hovered */
+#sidebar.collapsed .acc-h { position: relative; }
+#sidebar.collapsed .acc-h:hover .flyout,
+#sidebar.collapsed .acc-h .flyout:hover { display: block; }
+
+/* ══════════════ MAIN ══════════════ */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Topbar */
+.topbar {
+  background: var(--white); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 24px; height: 52px; flex-shrink: 0; gap: 12px;
+}
+.topbar-title { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
+.tb-btn {
+  display: flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 8px;
+  border: 1px solid var(--border); font-size: 12.5px; color: var(--text-med);
+  background: var(--white); cursor: pointer; font-family: var(--font); transition: background 0.15s;
+}
+.tb-btn:hover { background: var(--bg); }
+.tb-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: #6b77f0;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; cursor: pointer;
+}
+.status-pill {
+  display: flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 20px;
+  border: 1px solid var(--border); font-size: 12px; color: var(--text-med); cursor: pointer;
+}
+.s-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+
+/* Page content */
+.page { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+/* Page header */
+.page-header { margin-bottom: 20px; }
+.page-header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+.page-header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab {
+  padding: 10px 18px; font-size: 13px; color: var(--text-muted); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color 0.15s; white-space: nowrap;
+}
+.tab.active { color: var(--text); font-weight: 600; border-bottom-color: var(--accent); }
+.tab:hover:not(.active) { color: var(--text-med); }
+
+/* Banner */
+.banner {
+  border: 1px solid #c4b5fd; border-radius: 12px; padding: 16px 20px;
+  margin-bottom: 24px; background: #faf8ff; display: flex; align-items: flex-start; gap: 14px;
+}
+.banner-icon { width: 36px; height: 36px; border-radius: 50%; background: #ede9fe; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.banner-body { flex: 1; }
+.banner-body h3 { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.banner-body p { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+.banner-btn {
+  margin-top: 12px; display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px;
+  font-size: 12px; color: var(--text-med); cursor: pointer; background: var(--white); font-family: var(--font);
+}
+.banner-close { color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; }
+
+/* Section header */
+.sec-hdr { display: flex; align-items: center; margin-bottom: 14px; }
+.sec-hdr h2 { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
+.sec-hdr-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.add-btn {
+  display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--border); font-size: 12.5px; color: var(--text-med);
+  cursor: pointer; background: var(--white); font-family: var(--font);
+}
+
+/* Avatar group */
+.avatar-sm {
+  width: 28px; height: 28px; border-radius: 50%; background: #f59e0b;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white;
+}
+
+/* Metric cards */
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.mc {
+  background: var(--white); border-radius: 12px; border: 1px solid var(--border);
+  padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 0; position: relative; overflow: hidden;
+}
+.mc.highlighted { border: 2px solid var(--accent); }
+.mc-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.mc-label { font-size: 12.5px; font-weight: 500; color: var(--text-med); }
+.mc-actions { display: flex; align-items: center; gap: 6px; }
+.mc-icon-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); }
+.mc-value { font-size: 30px; font-weight: 700; color: var(--text); line-height: 1.1; margin-bottom: 6px; }
+.mc-trend { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); }
+.trend-up { color: var(--green); font-weight: 600; }
+.trend-dn { color: var(--red); font-weight: 600; }
+.mc-footer { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--accent); cursor: pointer; font-weight: 500; }
+
+/* Fav dashboards */
+.fav-section { background: var(--white); border-radius: 14px; border: 1px solid var(--border); padding: 20px 20px 8px; }
+.fav-hdr { display: flex; align-items: center; margin-bottom: 16px; }
+.fav-hdr h2 { font-size: 15px; font-weight: 600; flex: 1; }
+.fav-link { font-size: 12.5px; color: var(--text-med); cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.fav-create { font-size: 12.5px; color: var(--accent); font-weight: 600; cursor: pointer; margin-left: 20px; }
+
+.dash-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+.dash-card-hdr { display: flex; align-items: center; margin-bottom: 10px; }
+.dash-card-hdr h3 { font-size: 13.5px; font-weight: 600; flex: 1; }
+.dash-card-hdr .dc-actions { display: flex; gap: 8px; }
+.dash-ai { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--text-med); margin-bottom: 10px; line-height: 1.5; }
+.ai-sparkle { color: var(--purple); flex-shrink: 0; margin-top: 1px; }
+.dash-stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ds-time { font-size: 11px; color: var(--text-muted); }
+.stat-pill {
+  padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 500;
+  background: #f1f5f9; color: var(--text-med); display: flex; align-items: center; gap: 4px;
+}
+.stat-up { color: var(--green); font-weight: 600; }
+.stat-dn { color: var(--red); font-weight: 600; }
+
+/* Heart / share icons */
+.ic-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); }
+.ic-btn.liked { color: #e11d48; border-color: #fecdd3; background: #fff1f2; }
+</style>
+</head>
+<body>
+
+<svg style="display:none">
+  <symbol id="ic-ai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 2v6M8 2h8"/><circle cx="9" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.5" fill="currentColor" stroke="none"/><path d="M9 18h6"/></symbol>
+  <symbol id="ic-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="ic-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6.06 6.06l1.27-.85a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="ic-branch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+  <symbol id="ic-intel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></symbol>
+  <symbol id="ic-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 2v6M8 2h8"/><circle cx="9" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.5" fill="currentColor" stroke="none"/><path d="M9 18h6"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  <symbol id="ic-engage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="ic-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+  <symbol id="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ic-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+  <symbol id="ic-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="ic-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="ic-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="ic-ts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></symbol>
+</svg>
+
+<!-- ════════════════ SIDEBAR ════════════════ -->
+<nav id="sidebar">
+  <div class="sb-toggle" onclick="toggleSidebar()">›</div>
+  <div class="nav-scroll">
+
+    <div class="ni">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-ai"/></svg></span>
+      <span class="ni-text">AI Assistant</span>
+    </div>
+
+    <div class="ni">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-chat"/></svg></span>
+      <span class="ni-text">Conversations</span>
+      <span class="bdot">3</span>
+    </div>
+    <div class="ni">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-monitor"/></svg></span>
+      <span class="ni-text">Live Dashboard</span>
+    </div>
+    <div class="ni">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-list"/></svg></span>
+      <span class="ni-text">Interaction List</span>
+    </div>
+    <div class="ni">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-phone"/></svg></span>
+      <span class="ni-text">Telephony</span>
+    </div>
+
+    <!-- Branch Operations -->
+    <div class="acc-h open" onclick="toggleAcc(this)">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-branch"/></svg></span>
+      <span class="ni-text">Branch Operations</span>
+      <svg class="chev" width="12" height="12"><use href="#ic-chev"/></svg>
+      <div class="flyout" onmousedown="event.stopPropagation()">
+        <div class="flyout-title">Branch Operations</div>
+        <div class="flyout-item">Appointments</div>
+        <div class="flyout-item">Reputation Management</div>
+        <div class="flyout-item">Lobby Management</div>
+      </div>
+    </div>
+    <div class="acc-b open">
+      <div class="si"><span class="si-text">Appointments</span></div>
+      <div class="si"><span class="si-text">Reputation Management</span></div>
+      <div class="si"><span class="si-text">Lobby Management</span></div>
+    </div>
+
+    <!-- Intelligence -->
+    <div class="acc-h open" onclick="toggleAcc(this)">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-intel"/></svg></span>
+      <span class="ni-text">Intelligence</span>
+      <span class="new-tag">New</span>
+      <svg class="chev" width="12" height="12"><use href="#ic-chev"/></svg>
+      <div class="flyout" onmousedown="event.stopPropagation()">
+        <div class="flyout-title">Intelligence</div>
+        <div class="flyout-item active">Analytics 2.0</div>
+        <div class="flyout-item">Secure Data Export</div>
+        <div class="flyout-item">Check Register</div>
+        <div class="flyout-item">Reports</div>
+      </div>
+    </div>
+    <div class="acc-b open">
+      <div class="si active"><span class="si-text">Analytics 2.0</span></div>
+      <div class="si"><span class="si-text">Secure Data Export</span></div>
+      <div class="si"><span class="si-text">Check Register</span></div>
+      <div class="si"><span class="si-text">Reports</span></div>
+    </div>
+
+    <!-- AI Management -->
+    <div class="acc-h open" onclick="toggleAcc(this)">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-bot"/></svg></span>
+      <span class="ni-text">AI Management</span>
+      <svg class="chev" width="12" height="12"><use href="#ic-chev"/></svg>
+      <div class="flyout" onmousedown="event.stopPropagation()">
+        <div class="flyout-title">AI Management</div>
+        <div class="flyout-item">Assistants</div>
+        <div class="flyout-item">Agents</div>
+      </div>
+    </div>
+    <div class="acc-b open">
+      <div class="si"><span class="si-text">Assistants</span></div>
+      <div class="si"><span class="si-text">Agents</span></div>
+    </div>
+
+    <!-- Activity -->
+    <div class="acc-h open" onclick="toggleAcc(this)">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-activity"/></svg></span>
+      <span class="ni-text">Activity</span>
+      <svg class="chev" width="12" height="12"><use href="#ic-chev"/></svg>
+      <div class="flyout" onmousedown="event.stopPropagation()">
+        <div class="flyout-title">Activity</div>
+        <div class="flyout-item">Observatory</div>
+        <div class="flyout-item">Audit Logs</div>
+        <div class="flyout-item">Video Notary Journal</div>
+      </div>
+    </div>
+    <div class="acc-b open">
+      <div class="si"><span class="si-text">Observatory</span></div>
+      <div class="si"><span class="si-text">Audit Logs</span></div>
+      <div class="si"><span class="si-text">Video Notary Journal</span></div>
+    </div>
+
+    <!-- Engagement -->
+    <div class="acc-h open" onclick="toggleAcc(this)">
+      <span class="ni-icon"><svg width="16" height="16"><use href="#ic-engage"/></svg></span>
+      <span class="ni-text">Engagement</span>
+      <svg class="chev" width="12" height="12"><use href="#ic-chev"/></svg>
+      <div class="flyout" onmousedown="event.stopPropagation()">
+        <div class="flyout-title">Engagement</div>
+        <div class="flyout-item">Call Flow</div>
+        <div class="flyout-item">Knowledge Hub</div>
+        <div class="flyout-item">Workflows</div>
+        <div class="flyout-item">Marketing Campaigns</div>
+      </div>
+    </div>
+    <div class="acc-b open">
+      <div class="si"><span class="si-text">Call Flow</span></div>
+      <div class="si">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span class="si-text">Knowledge Hub</span>
+          <span class="si-meta">Knowledge, modules &amp; topics</span>
+        </div>
+      </div>
+      <div class="si"><span class="si-text">Workflows</span></div>
+      <div class="si"><span class="si-text">Marketing Campaigns</span></div>
+    </div>
+
+  </div>
+</nav>
+
+<!-- ════════════════ MAIN ════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="topbar-title">Analytics</span>
+    <button class="tb-btn">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-settings"/></svg>
+      Settings
+    </button>
+    <button class="tb-btn">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-help"/></svg>
+      Help
+    </button>
+    <div class="status-pill">
+      <span class="s-dot"></span>
+      Available
+    </div>
+    <div class="tb-avatar">A</div>
+  </header>
+
+  <!-- Page -->
+  <div class="page">
+
+    <!-- Page header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+      <div class="page-header" style="margin:0;">
+        <h1>Analytics</h1>
+        <p>Access all dashboards, reports and get instant insights with AI</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="tb-btn" style="gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="8" cy="12" r="5" fill="#4f8ef7" opacity="0.9"/><circle cx="14" cy="8" r="5" fill="#e85d7a" opacity="0.85"/><circle cx="16" cy="15" r="4" fill="#22c55e" opacity="0.8"/></svg>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><use href="#ic-chev"/></svg>
+        </button>
+        <button class="tb-btn" style="font-weight:600;color:var(--text);">
+          Set up my view
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-settings"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active">My view</div>
+      <div class="tab">Dashboards (32)</div>
+      <div class="tab">Reports (15)</div>
+      <div class="tab">Data workspace</div>
+    </div>
+
+    <!-- Banner -->
+    <div class="banner">
+      <div class="banner-icon">
+        <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8"><use href="#ic-sparkle"/></svg>
+      </div>
+      <div class="banner-body">
+        <h3>The new Eltropy analytics experience is live</h3>
+        <p>Everything you need to track your business is ready — pre-built dashboards for each product, plus the ability to create your own.</p>
+        <button class="banner-btn">View all dashboards &rsaquo;</button>
+      </div>
+      <span class="banner-close">×</span>
+    </div>
+
+    <!-- Metric highlights -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:15px;font-weight:600;">Metric highlights for you</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Updated 2 mins ago</div>
+      </div>
+      <div class="avatar-sm" style="margin-left:10px;">A</div>
+      <div style="flex:1;"></div>
+      <button class="add-btn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><use href="#ic-plus"/></svg>
+        Add metrics
+      </button>
+    </div>
+
+    <div class="metric-grid">
+      <!-- Card 1 -->
+      <div class="mc">
+        <div class="mc-hdr">
+          <span class="mc-label">Deflection Rate</span>
+          <div class="mc-actions">
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-eye"/></svg></div>
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><use href="#ic-dots"/></svg></div>
+          </div>
+        </div>
+        <div class="mc-value">75%</div>
+        <div class="mc-trend"><span class="trend-up">▲ +36.28%</span> Week of Feb 17–23</div>
+        <div class="mc-footer">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-monitor"/></svg>
+          AI voice agent 2.0 &rsaquo;
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div class="mc">
+        <div class="mc-hdr">
+          <span class="mc-label">Message volume</span>
+          <div class="mc-actions">
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-eye"/></svg></div>
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><use href="#ic-dots"/></svg></div>
+          </div>
+        </div>
+        <div class="mc-value">71%</div>
+        <div class="mc-trend"><span class="trend-dn">▼ +3.28%</span> Week of Feb 17–23</div>
+        <div class="mc-footer">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-monitor"/></svg>
+          Contact performance &rsaquo;
+        </div>
+      </div>
+      <!-- Card 3 (highlighted) -->
+      <div class="mc highlighted">
+        <div class="mc-hdr">
+          <span class="mc-label">Average handle time</span>
+          <div class="mc-actions">
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-eye"/></svg></div>
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><use href="#ic-dots"/></svg></div>
+          </div>
+        </div>
+        <div class="mc-value">4m 13s</div>
+        <div class="mc-trend"><span class="trend-up">▲ +36.28%</span> Week of Feb 17–23</div>
+        <div class="mc-footer">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-monitor"/></svg>
+          Contact performance &rsaquo;
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div class="mc">
+        <div class="mc-hdr">
+          <span class="mc-label">Live agents handoff</span>
+          <div class="mc-actions">
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-eye"/></svg></div>
+            <div class="mc-icon-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><use href="#ic-dots"/></svg></div>
+          </div>
+        </div>
+        <div class="mc-value">46,967</div>
+        <div class="mc-trend"><span class="trend-dn">▼ +36.28%</span> Week of Feb 17–23</div>
+        <div class="mc-footer">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-monitor"/></svg>
+          Contact performance &rsaquo;
+        </div>
+      </div>
+    </div>
+
+    <!-- Favourite dashboards -->
+    <div class="fav-section">
+      <div class="fav-hdr">
+        <h2>Favorite dashboards</h2>
+        <div class="avatar-sm" style="margin:0 10px;">A</div>
+        <div style="flex:1;"></div>
+        <span class="fav-link">View all dashboards &rsaquo;</span>
+        <span class="fav-create">+ Create dashboard</span>
+      </div>
+
+      <!-- Dashboard card 1 -->
+      <div class="dash-card">
+        <div class="dash-card-hdr">
+          <h3>AI Voice Agents</h3>
+          <div class="dc-actions">
+            <div class="ic-btn liked"><svg width="13" height="13" fill="#e11d48" stroke="#e11d48" stroke-width="1.8"><use href="#ic-heart"/></svg></div>
+            <div class="ic-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-share"/></svg></div>
+          </div>
+        </div>
+        <div class="dash-ai">
+          <svg class="ai-sparkle" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-sparkle"/></svg>
+          Voice bot deflection rate increased by 15% this week, successfully handling a massive spike in balance inquiry calls without increasing live agent load.
+        </div>
+        <div class="dash-stats">
+          <span class="ds-time">Updated 5 mins ago</span>
+          <div class="stat-pill">Deflection Rate <span class="stat-up">▲ +36%</span></div>
+          <div class="stat-pill">Live Agent Handoffs <span class="stat-dn">▼ -12%</span></div>
+        </div>
+      </div>
+
+      <!-- Dashboard card 2 -->
+      <div class="dash-card">
+        <div class="dash-card-hdr">
+          <h3>Contact Center performance</h3>
+          <div class="dc-actions">
+            <div class="ic-btn liked"><svg width="13" height="13" fill="#e11d48" stroke="#e11d48" stroke-width="1.8"><use href="#ic-heart"/></svg></div>
+            <div class="ic-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-share"/></svg></div>
+          </div>
+        </div>
+        <div class="dash-ai">
+          <svg class="ai-sparkle" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#ic-sparkle"/></svg>
+          Average handle time improved by 8% compared to last week, driven by faster resolution in loan inquiry categories.
+        </div>
+        <div class="dash-stats">
+          <span class="ds-time">Updated 12 mins ago</span>
+          <div class="stat-pill">Avg Handle Time <span class="stat-up">▲ +8%</span></div>
+          <div class="stat-pill">CSAT Score <span class="stat-up">▲ +4%</span></div>
+        </div>
+      </div>
+
+    </div><!-- /fav-section -->
+
+  </div><!-- /page -->
+</div><!-- /main -->
+
+<script>
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const btn = sb.querySelector('.sb-toggle');
+  sb.classList.toggle('collapsed');
+  btn.textContent = sb.classList.contains('collapsed') ? '‹' : '›';
+}
+function toggleAcc(header) {
+  const isOpen = header.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  header.nextElementSibling.classList.toggle('open', !isOpen);
+}
+// Position flyout vertically on hover
+document.querySelectorAll('.acc-h').forEach(header => {
+  header.addEventListener('mouseenter', () => {
+    const flyout = header.querySelector('.flyout');
+    if (!flyout) return;
+    const rect = header.getBoundingClientRect();
+    flyout.style.top = rect.top + 'px';
+  });
+});
+// Tab switching
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
