@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Eltropy Sidebar — Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  html, body, #root { height: 100%; margin: 0; padding: 0; background:#0a0532; }
+  body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+  * { box-sizing: border-box; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+
+<!-- React + ReactDOM (UMD) + Babel standalone for in-browser JSX -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect } = React;
+
+/* ─── EltropySidebarTest.jsx (renamed default export: SidebarApp) ─────── */
+const SidebarApp = (() => {
+
+// ─────────────────────────────────────────────────────────────
+// SHARED DESIGN TOKENS
+// ─────────────────────────────────────────────────────────────
+const tk = {
+  // Dark (Option A & B)
+  darkGradFrom: "#2d2759",
+  darkGradTo:   "#0a0532",
+  darkActive:   "#5c5685",
+  darkText:     "#a8a5c5",
+  darkTextOn:   "#ffffff",
+  darkBottom:   "#0d0835",
+  darkDivider:  "rgba(168,165,197,0.18)",
+  // Light (Option B legacy — kept for selection page only)
+  lightBg:      "#ffffff",
+  lightBorder:  "#eeeef0",
+  lightActive:  "#f3f1fc",
+  lightAccent:  "#2d2759",
+  lightText:    "#5e5e6b",
+  lightTextOn:  "#2d2759",
+  lightMuted:   "#92939e",
+  lightDivider: "#eeeef0",
+  lightHover:   "#f7f7f8",
+  // Shared
+  orange:       "#e26003",
+  violet500:    "#2d2759",
+  violet400:    "#5c5685",
+  violet300:    "#76719e",
+  violet200:    "#a8a5c5",
+  violet100:    "#ddd9ee",
+  violet50:     "#f3f1fc",
+  font:         '"ABC Diatype","Inter",system-ui,sans-serif',
+};
+
+// ─────────────────────────────────────────────────────────────
+// NAV DATA — OPTION A (feature-based)
+// ─────────────────────────────────────────────────────────────
+const NAV = [
+  { id: "ai-assistant",   label: "AI Assistant",       icon: "ai",          isHome: true },
+  { id: "conversations",  label: "Conversations",      icon: "chat",        badge: 12 },
+  { id: "telephony",      label: "Telephony",          icon: "phone" },
+  {
+    id: "branch-ops", label: "Branch Operations", icon: "building",
+    children: [
+      { id: "appointments", label: "Appointments",          icon: "calendar" },
+      { id: "reputation",   label: "Reputation Management", icon: "person" },
+      { id: "lobby",        label: "Lobby Management",      icon: "door" },
+    ],
+  },
+  {
+    id: "intelligence", label: "Intelligence", icon: "sparkle", tag: "New",
+    children: [
+      { id: "analytics",   label: "Analytics 2.0",      icon: "bar-chart" },
+      { id: "data-export", label: "Secure Data Export", icon: "export" },
+      { id: "check-reg",   label: "Check Register",     icon: "check" },
+      { id: "reports",     label: "Reports",            icon: "line-chart" },
+    ],
+  },
+  {
+    id: "ai-mgmt", label: "AI Management", icon: "robot",
+    children: [
+      { id: "agents", label: "Agents & Assistants", icon: "agent" },
+    ],
+  },
+  {
+    id: "activity", label: "Activity", icon: "pulse",
+    children: [
+      { id: "observatory",   label: "Observatory",          icon: "eye" },
+      { id: "live-dash",     label: "Live Dashboard",       icon: "live" },
+      { id: "interactions",  label: "Interaction List",     icon: "list" },
+      { id: "audit",         label: "Audit Logs",           icon: "doc" },
+      { id: "video-notary",  label: "Video Notary Journal", icon: "video" },
+    ],
+  },
+  {
+    id: "engagement", label: "Engagement", icon: "smile",
+    children: [
+      { id: "call-flow",  label: "Call Flow / Workflow", icon: "flow" },
+      {
+        id: "knowledge-hub", label: "Knowledge Hub", icon: "book",
+        children: [
+          { id: "knowledge", label: "Knowledge" },
+          { id: "modules",   label: "Modules" },
+          { id: "topics",    label: "Topics" },
+        ],
+      },
+      { id: "campaigns", label: "Marketing Campaigns", icon: "campaign" },
+    ],
+  },
+];
+
+const BOTTOM = [{ id: "help", label: "Help & Support", icon: "help" }];
+
+// ─────────────────────────────────────────────────────────────
+// NAV DATA — OPTION B (credit union department groups, accordion style)
+// ─────────────────────────────────────────────────────────────
+const NAV_B = [
+  { id: "ai-assistant", label: "AI Assistant", icon: "ai", isHome: true },
+  {
+    id: "member-conversations", label: "Communications", icon: "chat",
+    children: [
+      { id: "member-inbox",  label: "Conversations",       icon: "chat",     badge: 12 },
+      { id: "telephony",     label: "Telephony",            icon: "phone" },
+      { id: "appointments",  label: "Appointments",         icon: "calendar" },
+      { id: "lobby",         label: "Lobby Management",     icon: "door" },
+    ],
+  },
+  {
+    id: "operations", label: "Operations", icon: "pulse",
+    children: [
+      { id: "live-dash",    label: "Live Dashboard",       icon: "live" },
+      { id: "interactions", label: "Interaction List",     icon: "list" },
+      {
+        id: "knowledge-hub", label: "Knowledge Hub", icon: "book",
+        children: [
+          { id: "knowledge", label: "Knowledge" },
+          { id: "modules",   label: "Modules" },
+          { id: "topics",    label: "Topics" },
+        ],
+      },
+      { id: "observatory",  label: "Observatory",          icon: "eye" },
+      { id: "audit",        label: "Audit Logs",           icon: "doc" },
+      { id: "video-notary", label: "Video Notary Journal", icon: "video" },
+      { id: "call-flow",    label: "Call Flow",            icon: "flow" },
+    ],
+  },
+  {
+    id: "marketing", label: "Marketing", icon: "campaign",
+    children: [
+      { id: "campaigns",  label: "Campaigns",              icon: "campaign" },
+      { id: "reputation", label: "Reputation Management",  icon: "person" },
+    ],
+  },
+  {
+    id: "insights", label: "Insights & Reports", icon: "bar-chart",
+    children: [
+      { id: "analytics",   label: "Analytics 2.0",      icon: "bar-chart" },
+      { id: "data-export", label: "Secure Data Export", icon: "export" },
+      { id: "check-reg",   label: "Check Register",     icon: "check" },
+      { id: "reports",     label: "Reports",            icon: "line-chart" },
+    ],
+  },
+  {
+    id: "ai-control", label: "AI Control Center", icon: "robot",
+    children: [
+      { id: "agents", label: "Agents & Assistants", icon: "agent" },
+    ],
+  },
+];
+
+const BOTTOM_B = [{ id: "help", label: "Help & Support", icon: "help" }];
+
+// ─────────────────────────────────────────────────────────────
+// SVG ICON LIBRARY
+// ─────────────────────────────────────────────────────────────
+function SvgIcon({ name, size = 15, color = "currentColor" }) {
+  const d = {
+    ai:        <><path d="M8 2C5.24 2 3 4.24 3 7c0 1.6.75 3.02 1.92 3.96L4.5 13.5l3-1.5H8c2.76 0 5-2.24 5-5S10.76 2 8 2z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/><circle cx="6" cy="7" r=".75" fill={color}/><circle cx="8" cy="7" r=".75" fill={color}/><circle cx="10" cy="7" r=".75" fill={color}/></>,
+    chat:      <path d="M2 3.5C2 2.67 2.67 2 3.5 2h9C13.33 2 14 2.67 14 3.5v7c0 .83-.67 1.5-1.5 1.5H5l-3 2V3.5z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/>,
+    phone:     <path d="M3 2h2.5l1 2.5-1.5 1a7 7 0 0 0 3.5 3.5l1-1.5L12 9.5V12a1 1 0 0 1-1 1C4.5 13 2 7.5 2 4a1 1 0 0 1 1-2z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/>,
+    building:  <><rect x="2" y="7" width="12" height="7" rx="1" stroke={color} strokeWidth="1.2"/><path d="M1.5 7l6.5-4.5L14.5 7" stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><rect x="6" y="10" width="4" height="4" rx=".5" stroke={color} strokeWidth="1.1"/></>,
+    calendar:  <><rect x="2" y="3" width="12" height="11" rx="1.5" stroke={color} strokeWidth="1.2"/><path d="M5 2v2M11 2v2M2 7h12" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    person:    <><circle cx="8" cy="5.5" r="2.5" stroke={color} strokeWidth="1.2"/><path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    door:      <><rect x="3" y="2.5" width="10" height="11" rx="1" stroke={color} strokeWidth="1.2"/><circle cx="10" cy="8" r=".8" fill={color}/></>,
+    sparkle:   <path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 10l-3 1.5.5-3.5L3 5.5 6.5 5 8 2z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/>,
+    "bar-chart":<path d="M3 12V9M6 12V6M9 12V8M12 12V4" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>,
+    export:    <><path d="M8 2v7M5 6l3 3 3-3" stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 11v2h10v-2" stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></>,
+    check:     <><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke={color} strokeWidth="1.2"/><path d="M5 8l2 2 4-4" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></>,
+    "line-chart":<path d="M2 10l3-3 3 2 3-4 3 2" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>,
+    robot:     <><rect x="2.5" y="5" width="11" height="8" rx="1.5" stroke={color} strokeWidth="1.2"/><circle cx="6" cy="9" r="1" fill={color}/><circle cx="10" cy="9" r="1" fill={color}/><path d="M8 2v3M6 13v1.5M10 13v1.5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    agent:     <><circle cx="8" cy="5" r="2.5" stroke={color} strokeWidth="1.2"/><path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    pulse:     <path d="M2 8h2.5l2-5 2 10 2-5H14" stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>,
+    eye:       <><ellipse cx="8" cy="8" rx="5" ry="3" stroke={color} strokeWidth="1.2"/><circle cx="8" cy="8" r="1.5" stroke={color} strokeWidth="1.2"/></>,
+    live:      <><circle cx="8" cy="8" r="2" stroke={color} strokeWidth="1.2"/><path d="M4.5 11.5a5 5 0 1 1 7 0" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    list:      <path d="M3 4h10M3 7.5h7M3 11h8" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>,
+    doc:       <><path d="M4.5 2.5h5l3 3V13a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" stroke={color} strokeWidth="1.2"/><path d="M9 2.5v3.5h3.5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    video:     <><rect x="2" y="4.5" width="8" height="7" rx="1" stroke={color} strokeWidth="1.2"/><path d="M10 7l4-2.5v7L10 9V7z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/></>,
+    smile:     <><circle cx="8" cy="8" r="5.5" stroke={color} strokeWidth="1.2"/><path d="M5.5 9.5a3 3 0 0 0 5 0" stroke={color} strokeWidth="1.2" strokeLinecap="round"/><circle cx="6.5" cy="7" r=".7" fill={color}/><circle cx="9.5" cy="7" r=".7" fill={color}/></>,
+    flow:      <><rect x="1" y="2" width="4" height="3" rx="1" stroke={color} strokeWidth="1.1"/><rect x="1" y="11" width="4" height="3" rx="1" stroke={color} strokeWidth="1.1"/><rect x="11" y="6.5" width="4" height="3" rx="1" stroke={color} strokeWidth="1.1"/><path d="M5 3.5h3c.83 0 1.5.67 1.5 1.5V8M5 12.5h3c.83 0 1.5-.67 1.5-1.5V8M11 8H9.5" stroke={color} strokeWidth="1.1" strokeLinecap="round"/></>,
+    book:      <><path d="M3 3h4.5C8.88 3 10 4.12 10 5.5V13H5.5C4.12 13 3 11.88 3 10.5V3z" stroke={color} strokeWidth="1.2"/><path d="M10 5.5C10 4.12 11.12 3 12.5 3H13v7.5c0 1.38-1.12 2.5-2.5 2.5H10" stroke={color} strokeWidth="1.2"/></>,
+    campaign:  <><path d="M3.5 6v4l9-1V7l-9-1z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/><path d="M3.5 8H2.5M5.5 10v2.5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    help:      <><circle cx="8" cy="8" r="5.5" stroke={color} strokeWidth="1.2"/><path d="M6.5 6.5a1.5 1.5 0 0 1 3 0c0 1-1.5 1.5-1.5 2.5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/><circle cx="8" cy="11.5" r=".6" fill={color}/></>,
+    chevDown:  <path d="M3 4.5l3 3 3-3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>,
+    chevRight: <path d="M4.5 3l3 3-3 3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>,
+    bookmark:  <path d="M4.5 2.5h7c.55 0 1 .45 1 1v9l-4-2-4 2v-9c0-.55.45-1 1-1z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/>,
+    "bookmark-fill": <path d="M4.5 2.5h7c.55 0 1 .45 1 1v9l-4-2-4 2v-9c0-.55.45-1 1-1z" fill={color} stroke={color} strokeWidth="1.2" strokeLinejoin="round"/>,
+    colLeft:   <path d="M9 11l-3-3 3-3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>,
+    colRight:  <path d="M7 5l3 3-3 3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>,
+    grid:      <><rect x="1.5" y="1.5" width="5" height="5" rx=".5" stroke={color} strokeWidth="1.1"/><rect x="9.5" y="1.5" width="5" height="5" rx=".5" stroke={color} strokeWidth="1.1"/><rect x="1.5" y="9.5" width="5" height="5" rx=".5" stroke={color} strokeWidth="1.1"/><rect x="9.5" y="9.5" width="5" height="5" rx=".5" stroke={color} strokeWidth="1.1"/></>,
+    settings:  <><circle cx="8" cy="8" r="2" stroke={color} strokeWidth="1.1"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke={color} strokeWidth="1.1" strokeLinecap="round"/></>,
+    timer:     <><circle cx="8" cy="8.5" r="5" stroke={color} strokeWidth="1.1"/><path d="M8 6v3l2 1" stroke={color} strokeWidth="1.1" strokeLinecap="round"/><path d="M6 2h4" stroke={color} strokeWidth="1.1" strokeLinecap="round"/></>,
+    mic:       <><rect x="5.5" y="1.5" width="5" height="8" rx="2.5" stroke={color} strokeWidth="1.2"/><path d="M3 8.5a5 5 0 0 0 10 0" stroke={color} strokeWidth="1.2" strokeLinecap="round"/><path d="M8 13.5v2" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></>,
+    send:      <path d="M2 2l12 6-12 6V9.5l8-1.5-8-1.5V2z" fill={color}/>,
+    thumbsUp:  <><path d="M6 9V5l2-3 1 1v3h3.5l-.5 5H6V9z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/><rect x="3" y="8" width="2.5" height="5" rx=".5" stroke={color} strokeWidth="1.2"/></>,
+    thumbsDown:<><path d="M10 7v4l-2 3-1-1V10H3.5l.5-5H10V7z" stroke={color} strokeWidth="1.2" strokeLinejoin="round"/><rect x="10.5" y="3" width="2.5" height="5" rx=".5" stroke={color} strokeWidth="1.2"/></>,
+    plus:      <path d="M8 3v10M3 8h10" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>,
+    trendUp:   <path d="M2 10l4-4 3 3 4-5" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>,
+    trendDown: <path d="M2 6l4 4 3-3 4 5" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>,
+    star:      <path d="M8 2l1.5 3.5 3.5.5-2.5 2.5.5 3.5L8 10.5 5 12l.5-3.5L3 6l3.5-.5L8 2z" fill={color}/>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      {d[name] || d["help"]}
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOP NAV BAR
+// ─────────────────────────────────────────────────────────────
+const QUEUES = [
+  { id: "account-opening", label: "Account opening", chat: 3, call: 2, video: 1 },
+  { id: "auto-loans",      label: "Auto Loans",      chat: 3, call: 2, video: 1 },
+  { id: "lending",         label: "Lending",         chat: 3, call: 2, video: 1 },
+  { id: "mortgage",        label: "Mortgage",        chat: 3, call: 2, video: 1 },
+  { id: "member-services", label: "Member services", chat: 3, call: 2, video: 1 },
+  { id: "support",         label: "Support",         chat: 3, call: 2, video: 1 },
+];
+
+function QBadge({ label, chat, call, video, active, onClick }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{
+        display:"inline-flex",alignItems:"center",gap:6,
+        padding:"3px 10px",borderRadius:100,border:"none",flexShrink:0,
+        cursor:"pointer",whiteSpace:"nowrap",fontFamily:tk.font,
+        background: active ? "#fff" : h ? "#ebebed" : "#f1f1f2",
+        boxShadow: active ? "0 4px 19px rgba(0,0,0,0.05),0 -1px 9px rgba(0,0,0,0.03)" : "none",
+        transition:"background 0.12s",
+      }}>
+      <span style={{ fontSize:12,fontWeight:700,color:active?"#11304f":"#2d2759",lineHeight:"18px" }}>{label}</span>
+      <span style={{ display:"inline-flex",alignItems:"center",gap:4 }}>
+        {[["chat",chat],["call",call],["video",video]].map(([type,count],i) => (
+          <span key={type} style={{ display:"inline-flex",alignItems:"center",gap:3 }}>
+            {i>0 && <span style={{ width:1,height:8,background:active?"#d9d9de":"#c6c6c6" }}/>}
+            <span style={{ display:"inline-flex",alignItems:"center",gap:2,color:active?"#11304f":"#76719e" }}>
+              <SvgIcon name={{chat:"chat",call:"phone",video:"video"}[type]} size={9} color="currentColor"/>
+              <span style={{ fontSize:10,fontWeight:700 }}>{count}</span>
+            </span>
+          </span>
+        ))}
+      </span>
+    </button>
+  );
+}
+
+function TopBar({ onLogoClick }) {
+  const [aq, setAq] = useState("lending");
+  const [status, setStatus] = useState("Available");
+  const [statusOpen, setStatusOpen] = useState(false);
+  const statusColors = { Available:"#14b580", Busy:"#db3127", Away:"#e26003", Offline:"#92939e" };
+  return (
+    <header style={{
+      display:"flex",alignItems:"center",justifyContent:"space-between",
+      height:48,background:"#fff",borderBottom:"1px solid #d9d9de",
+      padding:"0 20px 0 16px",boxSizing:"border-box",flexShrink:0,gap:16,
+      position:"sticky",top:0,zIndex:100,
+    }}>
+      <button
+        onClick={onLogoClick}
+        aria-label="Back to design selection"
+        title={onLogoClick ? "Back to design selection" : undefined}
+        style={{
+          background:"none", border:"none", padding:0, cursor: onLogoClick ? "pointer" : "default",
+          display:"flex", alignItems:"center", flexShrink:0,
+          borderRadius:6, outline:"none",
+          opacity: 1, transition:"opacity 0.15s",
+        }}
+        onMouseEnter={e => { if (onLogoClick) e.currentTarget.style.opacity = "0.75"; }}
+        onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+      >
+        <svg width="112" height="30" viewBox="0 0 112 30" fill="none" aria-label="Eltropy" style={{ display:"block" }}>
+          <polygon points="13,3.5 21.7,8.5 21.7,18.5 13,23.5 4.3,18.5 4.3,8.5" fill="#3d7ef5" />
+          <polygon points="8.5,14.5 14.6,18 14.6,25 8.5,28.5 2.4,25 2.4,18" fill="#e84050" />
+          <polygon points="19.5,1 24.3,3.75 24.3,9.25 19.5,12 14.7,9.25 14.7,3.75" fill="#2dbe61" />
+          <text x="29" y="21" fontFamily='"ABC Diatype","Inter","Helvetica Neue",system-ui,sans-serif' fontWeight="800" fontSize="17" letterSpacing="-0.4" fill="#0f2040">eltropy</text>
+        </svg>
+      </button>
+      <div style={{ display:"flex",alignItems:"center",flex:1,minWidth:0,overflow:"hidden" }}>
+        <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"0 10px",height:32,flexShrink:0,background:"#f3f1fc",borderRadius:"100px 0 0 100px",borderRight:"1px solid #e8e5f5" }}>
+          <SvgIcon name="timer" size={12} color="#2d2759"/>
+          <span style={{ fontFamily:tk.font,fontSize:12,fontWeight:700,color:"#2d2759",whiteSpace:"nowrap" }}>AHT: <strong>00:06:42</strong></span>
+        </div>
+        <div style={{ display:"flex",alignItems:"center",gap:6,overflowX:"auto",padding:"0 10px",background:"#f7f7f8",height:32,flex:1,minWidth:0,borderRadius:"0 100px 100px 0",scrollbarWidth:"none" }}>
+          {QUEUES.map(q => <QBadge key={q.id} {...q} active={aq===q.id} onClick={()=>setAq(q.id)}/>)}
+        </div>
+      </div>
+      <div style={{ display:"flex",alignItems:"center",gap:8,flexShrink:0 }}>
+        <button style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"4px 8px",border:"none",borderRadius:6,background:"transparent",cursor:"pointer",color:"#42424a",fontFamily:tk.font,fontSize:12,fontWeight:500 }}>
+          <SvgIcon name="grid" size={14} color="#42424a"/> All apps
+        </button>
+        <div style={{ width:1,height:18,background:"#d9d9de" }}/>
+        <button style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"4px 8px",border:"none",borderRadius:6,background:"transparent",cursor:"pointer",color:"#42424a",fontFamily:tk.font,fontSize:12,fontWeight:500 }}>
+          <SvgIcon name="settings" size={14} color="#42424a"/> Settings
+        </button>
+        <div style={{ width:1,height:18,background:"#d9d9de" }}/>
+        <div style={{ position:"relative" }}>
+          <button onClick={()=>setStatusOpen(p=>!p)} style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",border:"1px solid #d9d9de",borderRadius:100,background:"#fff",cursor:"pointer",fontFamily:tk.font,fontSize:12,fontWeight:500,color:"#42424a" }}>
+            <span style={{ width:7,height:7,borderRadius:"50%",background:statusColors[status] }}/>
+            {status}
+            <SvgIcon name="chevDown" size={10} color="#76719e"/>
+          </button>
+          {statusOpen && (
+            <div style={{ position:"absolute",top:"calc(100% + 4px)",right:0,background:"#fff",border:"1px solid #d9d9de",borderRadius:8,boxShadow:"0 8px 24px rgba(0,0,0,0.1)",zIndex:300,minWidth:130,overflow:"hidden" }}>
+              {Object.entries(statusColors).map(([s,c])=>(
+                <button key={s} onClick={()=>{setStatus(s);setStatusOpen(false)}} style={{ display:"flex",alignItems:"center",gap:8,width:"100%",padding:"7px 12px",border:"none",background:s===status?"#f3f1fc":"transparent",cursor:"pointer",fontFamily:tk.font,fontSize:12,fontWeight:s===status?700:400,color:"#11304f",textAlign:"left" }}>
+                  <span style={{ width:8,height:8,borderRadius:"50%",background:c }}/>{s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ width:1,height:18,background:"#d9d9de" }}/>
+        <div style={{ position:"relative",width:28,height:28 }}>
+          <div style={{ width:28,height:28,borderRadius:"50%",background:"#ddd9ee",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:tk.font,fontSize:11,fontWeight:700,color:"#11304f",cursor:"pointer" }}>S</div>
+          <span style={{ position:"absolute",bottom:0,right:-1,width:8,height:8,borderRadius:"50%",background:"#14b580",border:"1.5px solid #fff" }}/>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// OPTION A — DARK GRADIENT SIDEBAR (feature-based nav)
+// ─────────────────────────────────────────────────────────────
+function SidebarA({ mini = false, onItemClick }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [activeId, setActiveId]   = useState("ai-assistant");
+  const [bookmarks, setBookmarks] = useState(["conversations","reports"]);
+  const [expanded, setExpanded]   = useState({});
+
+  const toggleExpand = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+  const toggleBookmark = (id) => setBookmarks(p => p.includes(id) ? p.filter(b=>b!==id) : [...p,id]);
+
+  const handleClick = (id) => {
+    setActiveId(id);
+    if (onItemClick) onItemClick(id);
+  };
+
+  const scale = mini ? 0.72 : 1;
+  const W = collapsed ? 56 : 200;
+
+  function ItemA({ item, depth=0 }) {
+    const [hov, setHov] = useState(false);
+    const [bHov, setBHov] = useState(false);
+    const active = activeId === item.id;
+    const hasKids = item.children?.length > 0;
+    const isOpen = expanded[item.id];
+    const bkd = bookmarks.includes(item.id);
+
+    return (
+      <li style={{ position:"relative" }}>
+        <button
+          onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+          onClick={()=>{ if(hasKids && !collapsed) toggleExpand(item.id); else handleClick(item.id); }}
+          title={collapsed ? item.label : undefined}
+          style={{
+            display:"flex",alignItems:"center",gap:8,
+            height: item.isHome ? 36 : 30,width:"100%",border:"none",
+            borderRadius:4,cursor:"pointer",textAlign:"left",
+            padding: collapsed ? "0 8px" : `0 8px 0 ${8+depth*14}px`,
+            justifyContent: collapsed ? "center" : "flex-start",
+            background: active ? tk.darkActive : hov ? "rgba(92,86,133,0.35)" : "transparent",
+            color: active ? tk.darkTextOn : tk.darkText,
+            fontFamily:tk.font,fontSize:12,fontWeight:active?700:400,
+            transition:"background 0.12s,color 0.12s",
+          }}
+        >
+          {item.icon && <SvgIcon name={item.icon} size={depth>0?13:15} color="currentColor"/>}
+          {!collapsed && <>
+            <span style={{ flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{item.label}</span>
+            {item.badge && <span style={{ background:tk.orange,color:"#fff",borderRadius:75,fontSize:6,fontWeight:700,width:12,height:12,display:"flex",alignItems:"center",justifyContent:"center" }}>{item.badge}</span>}
+            {item.tag && <span style={{ border:`1px solid ${tk.darkActive}`,borderRadius:100,color:tk.violet100,fontSize:9,padding:"0 5px",height:14,display:"flex",alignItems:"center" }}>{item.tag}</span>}
+            {hasKids && <span style={{ display:"flex",transition:"transform 0.18s",transform:isOpen?"rotate(0deg)":"rotate(-90deg)",color:tk.violet300 }}><SvgIcon name="chevDown" size={11} color="currentColor"/></span>}
+            <button
+              onMouseEnter={()=>setBHov(true)} onMouseLeave={()=>setBHov(false)}
+              onClick={e=>{e.stopPropagation();toggleBookmark(item.id)}}
+              style={{ background:"none",border:"none",cursor:"pointer",padding:2,display:"flex",alignItems:"center",color:bkd?tk.orange:bHov?tk.violet100:tk.violet300,opacity:hov||bkd?1:0,transition:"opacity 0.15s",flexShrink:0 }}
+            >
+              <SvgIcon name={bkd?"bookmark-fill":"bookmark"} size={11} color="currentColor"/>
+            </button>
+          </>}
+          {collapsed && item.badge && <span style={{ position:"absolute",top:4,right:4,background:tk.orange,color:"#fff",borderRadius:"50%",fontSize:5,fontWeight:700,width:9,height:9,display:"flex",alignItems:"center",justifyContent:"center" }}>{item.badge}</span>}
+        </button>
+        {!collapsed && hasKids && isOpen && (
+          <ul style={{ listStyle:"none",margin:"2px 0 0",padding:0,display:"flex",flexDirection:"column",gap:1 }}>
+            {item.children.map(c=><ItemA key={c.id} item={c} depth={depth+1}/>)}
+          </ul>
+        )}
+      </li>
+    );
+  }
+
+  const bkList = bookmarks.map(id=>{
+    const flat=[];const walk=arr=>{for(const i of arr){flat.push(i);if(i.children)walk(i.children)}};walk([...NAV,...BOTTOM]);
+    return flat.find(i=>i.id===id);
+  }).filter(Boolean);
+
+  return (
+    <div style={{ transform:`scale(${scale})`, transformOrigin:"top left", width: W/scale, height:"100%", position:"relative" }}>
+      <nav style={{
+        display:"flex",flexDirection:"column",
+        width:W,height:"100%",
+        background:`linear-gradient(180deg,${tk.darkGradFrom},${tk.darkGradTo})`,
+        padding:`14px ${collapsed?6:12}px 0`,
+        boxSizing:"border-box",overflow:"visible",flexShrink:0,position:"relative",
+      }}>
+        {bkList.length>0 && !collapsed && (
+          <div style={{ marginBottom:4 }}>
+            <div style={{ fontSize:10,fontWeight:700,color:tk.violet300,textTransform:"uppercase",letterSpacing:"0.07em",padding:"4px 8px",fontFamily:tk.font,display:"flex",alignItems:"center",gap:5 }}>
+              <SvgIcon name="bookmark" size={10} color={tk.violet300}/> Bookmarks
+            </div>
+            {bkList.map(item=>(
+              <button key={item.id} onClick={()=>handleClick(item.id)} style={{ display:"flex",alignItems:"center",gap:8,height:28,width:"100%",padding:"0 8px",borderRadius:4,border:"none",cursor:"pointer",background:activeId===item.id?tk.darkActive:"rgba(255,255,255,0.05)",color:activeId===item.id?"#fff":tk.darkText,fontFamily:tk.font,fontSize:11,textAlign:"left" }}>
+                {item.icon && <SvgIcon name={item.icon} size={13} color="currentColor"/>}
+                <span style={{ flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{item.label}</span>
+                <SvgIcon name="bookmark-fill" size={10} color={tk.orange}/>
+              </button>
+            ))}
+            <div style={{ height:1,background:tk.darkDivider,margin:"6px 4px" }}/>
+          </div>
+        )}
+        <ul style={{ listStyle:"none",margin:0,padding:0,display:"flex",flexDirection:"column",gap:2,flex:1,overflowY:"auto",overflowX:"visible",paddingBottom:56 }}>
+          {NAV.map(item=><ItemA key={item.id} item={item}/>)}
+        </ul>
+        <div style={{ position:"absolute",bottom:0,left:0,right:0,height:48,background:tk.darkBottom,display:"flex",alignItems:"center",padding:`0 ${collapsed?6:12}px` }}>
+          <ul style={{ listStyle:"none",margin:0,padding:0,width:"100%" }}>
+            {BOTTOM.map(item=><ItemA key={item.id} item={item}/>)}
+          </ul>
+        </div>
+        {!mini && (
+          <button onClick={()=>setCollapsed(p=>!p)} style={{ position:"absolute",right:-14,bottom:44,width:28,height:28,background:tk.darkActive,border:"none",borderRadius:"0 6px 6px 0",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",zIndex:10,boxShadow:"3px 2px 10px rgba(0,0,0,0.35)" }}>
+            <SvgIcon name={collapsed?"colRight":"colLeft"} size={16} color="#fff"/>
+          </button>
+        )}
+      </nav>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// OPTION B — DARK GRADIENT SIDEBAR (credit union dept groups)
+// ─────────────────────────────────────────────────────────────
+function SidebarB({ mini = false, onItemClick }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [activeId, setActiveId]   = useState("ai-assistant");
+  const [bookmarks, setBookmarks] = useState(["member-inbox","reports"]);
+  const [expanded, setExpanded]   = useState({});
+
+  const toggleExpand = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+  const toggleBookmark = (id) => setBookmarks(p => p.includes(id) ? p.filter(b=>b!==id) : [...p,id]);
+
+  const handleClick = (id) => {
+    setActiveId(id);
+    if (onItemClick) onItemClick(id);
+  };
+
+  const W = collapsed ? 56 : 220;
+
+  // All items flattened for bookmarks lookup
+  const allItemsB = [];
+  const walkB = (arr) => { for (const i of arr) { allItemsB.push(i); if (i.children) walkB(i.children); } };
+  walkB([...NAV_B, ...BOTTOM_B]);
+
+  const bkList = bookmarks.map(id => allItemsB.find(i => i.id === id)).filter(Boolean);
+
+  function ItemB({ item, depth=0 }) {
+    const [hov, setHov] = useState(false);
+    const [bHov, setBHov] = useState(false);
+    const active = activeId === item.id;
+    const hasKids = item.children?.length > 0;
+    const isOpen = expanded[item.id];
+    const bkd = bookmarks.includes(item.id);
+
+    return (
+      <li style={{ position:"relative" }}>
+        <button
+          onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+          onClick={()=>{ if(hasKids && !collapsed) toggleExpand(item.id); else handleClick(item.id); }}
+          title={collapsed ? item.label : undefined}
+          style={{
+            display:"flex",alignItems:"center",gap:8,
+            height: item.isHome ? 36 : 30,width:"100%",border:"none",
+            borderRadius:4,cursor:"pointer",textAlign:"left",
+            padding: collapsed ? "0 8px" : `0 8px 0 ${8+depth*14}px`,
+            justifyContent: collapsed ? "center" : "flex-start",
+            background: active ? tk.darkActive : hov ? "rgba(92,86,133,0.35)" : "transparent",
+            color: active ? tk.darkTextOn : tk.darkText,
+            fontFamily:tk.font,fontSize:12,fontWeight:active?700:400,
+            transition:"background 0.12s,color 0.12s",
+          }}
+        >
+          {item.icon && <SvgIcon name={item.icon} size={depth>0?13:15} color="currentColor"/>}
+          {!collapsed && <>
+            <span style={{ flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{item.label}</span>
+            {item.badge && <span style={{ background:tk.orange,color:"#fff",borderRadius:75,fontSize:6,fontWeight:700,width:12,height:12,display:"flex",alignItems:"center",justifyContent:"center" }}>{item.badge}</span>}
+            {item.tag && <span style={{ border:`1px solid ${tk.darkActive}`,borderRadius:100,color:tk.violet100,fontSize:9,padding:"0 5px",height:14,display:"flex",alignItems:"center" }}>{item.tag}</span>}
+            {hasKids && <span style={{ display:"flex",transition:"transform 0.18s",transform:isOpen?"rotate(0deg)":"rotate(-90deg)",color:tk.violet300 }}><SvgIcon name="chevDown" size={11} color="currentColor"/></span>}
+            <button
+              onMouseEnter={()=>setBHov(true)} onMouseLeave={()=>setBHov(false)}
+              onClick={e=>{e.stopPropagation();toggleBookmark(item.id)}}
+              style={{ background:"none",border:"none",cursor:"pointer",padding:2,display:"flex",alignItems:"center",color:bkd?tk.orange:bHov?tk.violet100:tk.violet300,opacity:hov||bkd?1:0,transition:"opacity 0.15s",flexShrink:0 }}
+            >
+              <SvgIcon name={bkd?"bookmark-fill":"bookmark"} size={11} color="currentColor"/>
+            </button>
+          </>}
+          {collapsed && item.badge && <span style={{ position:"absolute",top:4,right:4,background:tk.orange,color:"#fff",borderRadius:"50%",fontSize:5,fontWeight:700,width:9,height:9,display:"flex",alignItems:"center",justifyContent:"center" }}>{item.badge}</span>}
+        </button>
+        {!collapsed && hasKids && isOpen && (
+          <ul style={{ listStyle:"none",margin:"2px 0 0",padding:0,display:"flex",flexDirection:"column",gap:1 }}>
+            {item.children.map(c=><ItemB key={c.id} item={c} depth={depth+1}/>)}
+          </ul>
+        )}
+      </li>
+    );
+  }
+
+  return (
+    <div style={{ width: W, height:"100%", position:"relative", flexShrink:0 }}>
+      <nav style={{
+        display:"flex",flexDirection:"column",
+        width:W,height:"100%",
+        background:`linear-gradient(180deg,${tk.darkGradFrom},${tk.darkGradTo})`,
+        padding:`14px ${collapsed?6:12}px 0`,
+        boxSizing:"border-box",overflow:"visible",flexShrink:0,position:"relative",
+      }}>
+        {/* Bookmarks */}
+        {bkList.length>0 && !collapsed && (
+          <div style={{ marginBottom:4 }}>
+            <div style={{ fontSize:10,fontWeight:700,color:tk.violet300,textTransform:"uppercase",letterSpacing:"0.07em",padding:"4px 8px",fontFamily:tk.font,display:"flex",alignItems:"center",gap:5 }}>
+              <SvgIcon name="bookmark" size={10} color={tk.violet300}/> Bookmarks
+            </div>
+            {bkList.map(item=>(
+              <button key={item.id} onClick={()=>handleClick(item.id)} style={{ display:"flex",alignItems:"center",gap:8,height:28,width:"100%",padding:"0 8px",borderRadius:4,border:"none",cursor:"pointer",background:activeId===item.id?tk.darkActive:"rgba(255,255,255,0.05)",color:activeId===item.id?"#fff":tk.darkText,fontFamily:tk.font,fontSize:11,textAlign:"left" }}>
+                {item.icon && <SvgIcon name={item.icon} size={13} color="currentColor"/>}
+                <span style={{ flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{item.label}</span>
+                <SvgIcon name="bookmark-fill" size={10} color={tk.orange}/>
+              </button>
+            ))}
+            <div style={{ height:1,background:tk.darkDivider,margin:"6px 4px" }}/>
+          </div>
+        )}
+
+        {/* Nav items */}
+        <ul style={{ listStyle:"none",margin:0,padding:0,display:"flex",flexDirection:"column",gap:2,flex:1,overflowY:"auto",overflowX:"visible",paddingBottom:56 }}>
+          {NAV_B.map(item=><ItemB key={item.id} item={item}/>)}
+        </ul>
+
+        {/* Bottom */}
+        <div style={{ position:"absolute",bottom:0,left:0,right:0,height:48,background:tk.darkBottom,display:"flex",alignItems:"center",padding:`0 ${collapsed?6:12}px` }}>
+          <ul style={{ listStyle:"none",margin:0,padding:0,width:"100%" }}>
+            {BOTTOM_B.map(item=><ItemB key={item.id} item={item}/>)}
+          </ul>
+        </div>
+
+        {/* Collapse btn */}
+        {!mini && (
+          <button onClick={()=>setCollapsed(p=>!p)} style={{ position:"absolute",right:-14,bottom:44,width:28,height:28,background:tk.darkActive,border:"none",borderRadius:"0 6px 6px 0",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",zIndex:10,boxShadow:"3px 2px 10px rgba(0,0,0,0.35)" }}>
+            <SvgIcon name={collapsed?"colRight":"colLeft"} size={16} color="#fff"/>
+          </button>
+        )}
+      </nav>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// AI ASSISTANT HOMEPAGE
+// ─────────────────────────────────────────────────────────────
+function AiHomepage() {
+  const [inputVal, setInputVal] = useState("");
+  const [activeTab, setActiveTab] = useState("live");
+  const [thumbed, setThumbed] = useState(null);
+
+  const conversations = [
+    { id:1, name:"Emily Carter", channel:"video", wait:"05:23", bot:"AI Voice Bot", reason:"Requested human for rate negotiation", initials:"EC", color:"#5c5685" },
+    { id:2, name:"Marcus Webb", channel:"call",  wait:"03:47", bot:"AI Voice Bot", reason:"Inquiry on home equity line",          initials:"MW", color:"#2d7ef5" },
+    { id:3, name:"Priya Nair",  channel:"chat",  wait:"01:12", bot:"AI Chat Bot",  reason:"Balance transfer assistance needed",   initials:"PN", color:"#14b580" },
+    { id:4, name:"Tom Fisher",  channel:"video", wait:"07:05", bot:"AI Voice Bot", reason:"Auto loan pre-approval escalation",    initials:"TF", color:"#e26003" },
+  ];
+
+  const barData = [40,55,35,70,62,80,68,90,75,88,72,95];
+
+  const channelIcon = { video:"video", call:"phone", chat:"chat" };
+  const channelColor = { video:"#5c5685", call:"#14b580", chat:"#e26003" };
+
+  return (
+    <main style={{ flex:1,background:"#f4f6f8",overflowY:"auto",padding:"24px 28px",boxSizing:"border-box",fontFamily:tk.font }}>
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 300px",gap:20,maxWidth:1200,margin:"0 auto" }}>
+
+        {/* ── LEFT COLUMN ── */}
+        <div style={{ display:"flex",flexDirection:"column",gap:16,minWidth:0 }}>
+
+          {/* Greeting card */}
+          <div style={{
+            background:"linear-gradient(93.94deg, rgb(226,240,247) 0%, rgb(243,240,255) 100%)",
+            borderRadius:14,padding:"20px 24px",
+            boxShadow:"0 2px 12px rgba(45,39,89,0.07)",
+          }}>
+            <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between" }}>
+              <div>
+                <p style={{ margin:"0 0 2px",fontSize:12,fontWeight:500,color:"#76719e" }}>Wednesday, April 15</p>
+                <h1 style={{ margin:"0 0 6px",fontSize:22,fontWeight:800,color:"#11304f",lineHeight:1.2 }}>Good afternoon, John 👋</h1>
+                <p style={{ margin:0,fontSize:13,color:"#5c5685",fontWeight:400 }}>You have <strong style={{color:"#e26003"}}>4 conversations</strong> waiting in your queue</p>
+              </div>
+              <div style={{ width:56,height:56,borderRadius:"50%",background:"linear-gradient(135deg,#5c5685,#2d2759)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                <SvgIcon name="ai" size={26} color="#fff"/>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat input */}
+          <div style={{
+            background:"#fff",borderRadius:14,
+            border:"1.5px solid rgba(112,94,222,0.29)",
+            boxShadow:"0 4px 20px rgba(45,39,89,0.08)",
+            padding:"14px 16px",
+          }}>
+            <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+              {/* Plus */}
+              <button style={{ width:32,height:32,borderRadius:8,border:"1px solid #eeeef0",background:"#f7f7f8",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}>
+                <SvgIcon name="plus" size={14} color="#76719e"/>
+              </button>
+              {/* Input */}
+              <input
+                value={inputVal}
+                onChange={e=>setInputVal(e.target.value)}
+                placeholder="How can I help you today?"
+                style={{ flex:1,border:"none",outline:"none",fontSize:13,color:"#11304f",background:"transparent",fontFamily:tk.font,fontWeight:400 }}
+              />
+              {/* Right actions */}
+              <div style={{ display:"flex",alignItems:"center",gap:6,flexShrink:0 }}>
+                <button style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",border:"1px solid #eeeef0",borderRadius:20,background:"#f7f7f8",cursor:"pointer",fontSize:11,fontWeight:600,color:"#5c5685",fontFamily:tk.font }}>
+                  <SvgIcon name="sparkle" size={11} color="#5c5685"/> Assista…
+                  <SvgIcon name="chevDown" size={9} color="#76719e"/>
+                </button>
+                <button style={{ width:30,height:30,borderRadius:"50%",border:"1px solid #eeeef0",background:"#f7f7f8",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
+                  <SvgIcon name="mic" size={13} color="#76719e"/>
+                </button>
+                <button style={{ width:34,height:34,borderRadius:"50%",border:"none",background:"#30989a",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 2px 8px rgba(48,152,154,0.35)" }}>
+                  <SvgIcon name="send" size={13} color="#fff"/>
+                </button>
+              </div>
+            </div>
+
+            {/* Suggestion pills */}
+            <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginTop:12 }}>
+              {[
+                "Weekly AI voice summary",
+                "Text messages sent last month branch wise",
+                "Chat containment rate for this week",
+              ].map(s=>(
+                <button key={s} onClick={()=>setInputVal(s)} style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",border:"1px solid rgba(92,86,133,0.2)",borderRadius:20,background:"rgba(243,241,252,0.6)",cursor:"pointer",fontSize:11,fontWeight:500,color:"#5c5685",fontFamily:tk.font,transition:"background 0.12s" }}>
+                  <SvgIcon name="sparkle" size={10} color="#5c5685"/> {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Maybe Important card */}
+          <div style={{
+            background:"linear-gradient(120deg, #daeaf7 0%, #eef2ff 60%, #fff 100%)",
+            borderRadius:14,padding:"18px 20px",
+            border:"1px solid rgba(45,126,245,0.15)",
+            boxShadow:"0 2px 10px rgba(45,39,89,0.06)",
+          }}>
+            <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12 }}>
+              <div style={{ flex:1,minWidth:0 }}>
+                <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:8 }}>
+                  <span style={{ fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:"#2d7ef5",background:"rgba(45,126,245,0.1)",padding:"2px 8px",borderRadius:100 }}>Maybe Important</span>
+                  <SvgIcon name="sparkle" size={11} color="#2d7ef5"/>
+                </div>
+                <h3 style={{ margin:"0 0 6px",fontSize:14,fontWeight:700,color:"#11304f" }}>Anticipate Auto Loan Queries</h3>
+                <p style={{ margin:"0 0 12px",fontSize:12,color:"#5e5e6b",lineHeight:1.6 }}>
+                  Rate increase alerts are trending — 23% more members may reach out this week regarding auto loan rates and refinancing options.
+                </p>
+                {/* Source avatars */}
+                <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                  <div style={{ display:"flex" }}>
+                    {[["ST","#5c5685"],["DT","#14b580"],["FT","#e26003"]].map(([init,col],i)=>(
+                      <div key={i} style={{ width:22,height:22,borderRadius:"50%",background:col,border:"2px solid #fff",marginLeft:i>0?-7:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#fff",zIndex:3-i }}>
+                        {init}
+                      </div>
+                    ))}
+                    <div style={{ width:22,height:22,borderRadius:"50%",background:"#ddd9ee",border:"2px solid #fff",marginLeft:-7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#76719e",zIndex:0 }}>+2</div>
+                  </div>
+                  <span style={{ fontSize:11,color:"#76719e" }}>5 sources</span>
+                </div>
+              </div>
+              {/* Thumbs */}
+              <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
+                <button onClick={()=>setThumbed("up")} style={{ width:30,height:30,borderRadius:8,border:`1px solid ${thumbed==="up"?"#14b580":"#eeeef0"}`,background:thumbed==="up"?"rgba(20,181,128,0.1)":"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  <SvgIcon name="thumbsUp" size={13} color={thumbed==="up"?"#14b580":"#92939e"}/>
+                </button>
+                <button onClick={()=>setThumbed("down")} style={{ width:30,height:30,borderRadius:8,border:`1px solid ${thumbed==="down"?"#e26003":"#eeeef0"}`,background:thumbed==="down"?"rgba(226,96,3,0.1)":"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  <SvgIcon name="thumbsDown" size={13} color={thumbed==="down"?"#e26003":"#92939e"}/>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Queue tabs + list */}
+          <div style={{ background:"#fff",borderRadius:14,border:"1px solid #eeeef0",overflow:"hidden" }}>
+            {/* Tabs */}
+            <div style={{ display:"flex",borderBottom:"1px solid #eeeef0",padding:"0 20px" }}>
+              {[["live","Live Queue"],["callbacks","Callbacks"],["recent","Recent Activity"]].map(([id,label])=>(
+                <button key={id} onClick={()=>setActiveTab(id)} style={{
+                  padding:"12px 16px 10px",border:"none",background:"transparent",cursor:"pointer",
+                  fontFamily:tk.font,fontSize:12,fontWeight:activeTab===id?700:500,
+                  color:activeTab===id?"#00796b":"#76719e",
+                  borderBottom:activeTab===id?"2px solid #00796b":"2px solid transparent",
+                  marginBottom:-1,transition:"color 0.12s",
+                }}>
+                  {label}
+                  {id==="live" && <span style={{ marginLeft:6,background:"#00796b",color:"#fff",borderRadius:100,fontSize:9,fontWeight:700,padding:"1px 6px" }}>4</span>}
+                </button>
+              ))}
+            </div>
+
+            {/* Conversation rows */}
+            <div>
+              {conversations.map((c,i)=>(
+                <div key={c.id} style={{
+                  display:"flex",alignItems:"center",gap:12,padding:"12px 20px",
+                  borderBottom:i<conversations.length-1?"1px solid #f3f3f5":"none",
+                  cursor:"pointer",transition:"background 0.1s",
+                }}
+                  onMouseEnter={e=>e.currentTarget.style.background="#f9f9fb"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+                >
+                  {/* Avatar */}
+                  <div style={{ width:36,height:36,borderRadius:"50%",background:c.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0 }}>{c.initials}</div>
+                  {/* Channel icon */}
+                  <div style={{ width:22,height:22,borderRadius:6,background:`${channelColor[c.channel]}18`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                    <SvgIcon name={channelIcon[c.channel]} size={11} color={channelColor[c.channel]}/>
+                  </div>
+                  {/* Info */}
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:2 }}>
+                      <span style={{ fontSize:12,fontWeight:700,color:"#11304f" }}>{c.name}</span>
+                      <span style={{ fontSize:10,color:"#76719e",background:"#f3f1fc",padding:"1px 7px",borderRadius:100 }}>{c.bot}</span>
+                    </div>
+                    <p style={{ margin:0,fontSize:11,color:"#92939e",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{c.reason}</p>
+                  </div>
+                  {/* Wait badge */}
+                  <div style={{ display:"flex",alignItems:"center",gap:4,background:"rgba(226,96,3,0.1)",borderRadius:6,padding:"3px 8px",flexShrink:0 }}>
+                    <span style={{ width:6,height:6,borderRadius:"50%",background:"#e26003" }}/>
+                    <span style={{ fontSize:10,fontWeight:700,color:"#e26003",fontFamily:"monospace" }}>Wait: {c.wait}</span>
+                  </div>
+                  {/* Accept btn */}
+                  <button style={{ padding:"5px 14px",background:"#00796b",border:"none",borderRadius:6,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,fontFamily:tk.font }}>
+                    Accept
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── RIGHT COLUMN — My Performance ── */}
+        <div style={{ display:"flex",flexDirection:"column",gap:16 }}>
+          <div style={{ background:"#fff",borderRadius:14,border:"1px solid #eeeef0",padding:"18px 18px 20px",boxShadow:"0 2px 8px rgba(45,39,89,0.05)" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
+              <h2 style={{ margin:0,fontSize:13,fontWeight:700,color:"#11304f" }}>My Performance</h2>
+              <span style={{ fontSize:10,color:"#76719e",background:"#f7f7f8",padding:"2px 8px",borderRadius:100,border:"1px solid #eeeef0" }}>This week</span>
+            </div>
+
+            {/* CSAT */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:3 }}>
+                <span style={{ fontSize:11,color:"#76719e",fontWeight:500 }}>CSAT Score</span>
+                <span style={{ display:"flex",alignItems:"center",gap:4,fontSize:10,fontWeight:700,color:"#14b580" }}>
+                  <SvgIcon name="trendUp" size={10} color="#14b580"/> +36.28%
+                </span>
+              </div>
+              <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                <span style={{ fontSize:28,fontWeight:800,color:"#11304f",lineHeight:1 }}>4.9</span>
+                <div style={{ display:"flex",gap:1 }}>
+                  {[1,2,3,4,5].map(i=><SvgIcon key={i} name="star" size={12} color={i<=4?"#e26003":"#ddd9ee"}/>)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ height:1,background:"#f3f3f5",margin:"12px 0" }}/>
+
+            {/* AVG Handle Time */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:3 }}>
+                <span style={{ fontSize:11,color:"#76719e",fontWeight:500 }}>AVG Handle Time</span>
+                <span style={{ display:"flex",alignItems:"center",gap:4,fontSize:10,fontWeight:700,color:"#e26003" }}>
+                  <SvgIcon name="trendDown" size={10} color="#e26003"/> +36.28%
+                </span>
+              </div>
+              <span style={{ fontSize:22,fontWeight:800,color:"#11304f" }}>4m 12s</span>
+            </div>
+
+            <div style={{ height:1,background:"#f3f3f5",margin:"12px 0" }}/>
+
+            {/* FCR Rate */}
+            <div style={{ marginBottom:16 }}>
+              <div style={{ display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:6 }}>
+                <span style={{ fontSize:11,color:"#76719e",fontWeight:500 }}>FCR Rate</span>
+                <span style={{ fontSize:22,fontWeight:800,color:"#11304f" }}>92%</span>
+              </div>
+              {/* Progress bar */}
+              <div style={{ height:6,background:"#f3f3f5",borderRadius:100,overflow:"hidden" }}>
+                <div style={{ height:"100%",width:"92%",background:"linear-gradient(90deg,#5c5685,#30989a)",borderRadius:100 }}/>
+              </div>
+            </div>
+
+            {/* Trend bar chart */}
+            <div>
+              <p style={{ margin:"0 0 8px",fontSize:10,fontWeight:600,color:"#92939e",textTransform:"uppercase",letterSpacing:"0.07em" }}>Trend (last 12 days)</p>
+              <div style={{ display:"flex",alignItems:"flex-end",gap:3,height:52 }}>
+                {barData.map((v,i)=>(
+                  <div key={i} style={{ flex:1,background:i===barData.length-1?"#5c5685":"#ddd9ee",borderRadius:"2px 2px 0 0",height:`${(v/100)*52}px`,transition:"height 0.3s",minWidth:0 }}/>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick actions */}
+          <div style={{ background:"#fff",borderRadius:14,border:"1px solid #eeeef0",padding:"16px 18px" }}>
+            <h3 style={{ margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#11304f" }}>Quick Actions</h3>
+            <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+              {[
+                { label:"View Live Dashboard", icon:"live", color:"#14b580" },
+                { label:"Open Analytics 2.0",  icon:"bar-chart", color:"#2d7ef5" },
+                { label:"Knowledge Hub",       icon:"book", color:"#e26003" },
+              ].map(a=>(
+                <button key={a.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 12px",border:"1px solid #eeeef0",borderRadius:8,background:"#f9f9fb",cursor:"pointer",fontFamily:tk.font,fontSize:12,fontWeight:500,color:"#11304f",textAlign:"left" }}>
+                  <span style={{ width:26,height:26,borderRadius:7,background:`${a.color}18`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                    <SvgIcon name={a.icon} size={13} color={a.color}/>
+                  </span>
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// GENERIC PAGE CONTENT (for non-AI-assistant routes)
+// ─────────────────────────────────────────────────────────────
+function PageContent({ activeId = "ai-assistant" }) {
+  if (activeId === "ai-assistant") return <AiHomepage/>;
+  return (
+    <main style={{ flex:1,background:"#f7f7f8",padding:28,overflowY:"auto",fontFamily:tk.font }}>
+      <div style={{ background:"#fff",borderRadius:10,padding:24,border:"1px solid #eeeef0",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",marginBottom:16 }}>
+        <h1 style={{ margin:"0 0 6px",fontSize:18,fontWeight:700,color:"#11304f",textTransform:"capitalize" }}>
+          {activeId.replace(/-/g," ")}
+        </h1>
+        <p style={{ margin:0,fontSize:13,color:"#76719e",lineHeight:1.7 }}>Select any sidebar item to navigate. Hover items to bookmark them.</p>
+      </div>
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16 }}>
+        {["Overview","Metrics","Activity","Settings","Reports","Actions"].map(c=>(
+          <div key={c} style={{ background:"#fff",borderRadius:10,padding:20,border:"1px solid #eeeef0" }}>
+            <p style={{ margin:0,fontWeight:700,fontSize:13,color:"#11304f" }}>{c}</p>
+            <p style={{ margin:"6px 0 0",fontSize:12,color:"#92939e" }}>Content · Data · Controls</p>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// SELECTION LANDING PAGE
+// ─────────────────────────────────────────────────────────────
+function SelectionPage({ onSelect }) {
+  const [hoverA, setHoverA] = useState(false);
+  const [hoverB, setHoverB] = useState(false);
+  const [voted, setVoted]   = useState(null);
+
+  const cardBase = {
+    display:"flex",flexDirection:"column",
+    borderRadius:16,overflow:"hidden",cursor:"pointer",
+    transition:"transform 0.18s,box-shadow 0.18s",
+    border:"2px solid transparent",
+    boxShadow:"0 4px 24px rgba(0,0,0,0.08)",
+    flex:1,minWidth:0,
+  };
+
+  function OptionCard({ id, label, children, hov, setHov, tag, tagColor }) {
+    const picked = voted === id;
+    return (
+      <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:12 }}>
+        <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+          <span style={{ fontFamily:tk.font,fontSize:22,fontWeight:800,color:"#11304f" }}>{label}</span>
+          <span style={{ background:tagColor,color:"#fff",borderRadius:100,fontSize:11,fontWeight:700,padding:"2px 10px",fontFamily:tk.font }}>{tag}</span>
+        </div>
+        <div
+          onMouseEnter={()=>setHov(true)}
+          onMouseLeave={()=>setHov(false)}
+          onClick={()=>{ setVoted(id); setTimeout(()=>onSelect(id),320); }}
+          style={{
+            ...cardBase,
+            border: picked ? "2px solid #e26003" : hov ? "2px solid #5c5685" : "2px solid #eeeef0",
+            transform: hov || picked ? "translateY(-4px)" : "translateY(0)",
+            boxShadow: hov || picked ? "0 12px 40px rgba(0,0,0,0.14)" : "0 4px 24px rgba(0,0,0,0.08)",
+          }}
+        >
+          <div style={{ display:"flex",height:340,pointerEvents:"none",overflow:"hidden" }}>
+            <div style={{ flexShrink:0,overflow:"hidden",transform:"scale(0.7)",transformOrigin:"top left",width: id==="A" ? 200/0.7 : 220/0.7, height:340/0.7 }}>
+              {id==="A" ? <SidebarA mini/> : <SidebarB mini/>}
+            </div>
+            <div style={{ flex:1,background:"#f7f7f8",padding:14,display:"flex",flexDirection:"column",gap:10 }}>
+              <div style={{ background:"#fff",borderRadius:8,padding:12,border:"1px solid #eeeef0" }}>
+                <div style={{ height:10,background:"#ddd9ee",borderRadius:4,width:"60%",marginBottom:6 }}/>
+                <div style={{ height:8,background:"#eeeef0",borderRadius:4,width:"80%" }}/>
+              </div>
+              {[1,2,3].map(i=>(
+                <div key={i} style={{ background:"#fff",borderRadius:8,padding:10,border:"1px solid #eeeef0",display:"flex",gap:8,alignItems:"center" }}>
+                  <div style={{ width:28,height:28,borderRadius:6,background:"#f3f1fc",flexShrink:0 }}/>
+                  <div style={{ flex:1 }}>
+                    <div style={{ height:8,background:"#ddd9ee",borderRadius:3,width:"50%",marginBottom:5 }}/>
+                    <div style={{ height:7,background:"#eeeef0",borderRadius:3,width:"70%" }}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding:"12px 16px",background: picked?"#fff8f4":"#fff",borderTop:"1px solid #eeeef0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+            <span style={{ fontFamily:tk.font,fontSize:12,fontWeight:600,color: picked?"#e26003":"#5c5685" }}>
+              {picked ? "✓ Selected — loading…" : hov ? "Click to preview this design" : "Hover to preview"}
+            </span>
+            <div style={{ display:"flex",gap:6 }}>
+              {["Clean","Modern","Accessible"].map(t=>(
+                <span key={t} style={{ background:"#f3f1fc",color:"#5c5685",borderRadius:100,fontSize:10,fontWeight:600,padding:"2px 8px",fontFamily:tk.font }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight:"100vh",background:"#f7f7f8",fontFamily:tk.font }}>
+      <div style={{ background:"#fff",borderBottom:"1px solid #eeeef0",padding:"20px 48px" }}>
+        <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:4 }}>
+          <svg width="112" height="30" viewBox="0 0 112 30" fill="none" aria-label="Eltropy">
+            <polygon points="13,3.5 21.7,8.5 21.7,18.5 13,23.5 4.3,18.5 4.3,8.5" fill="#3d7ef5" />
+            <polygon points="8.5,14.5 14.6,18 14.6,25 8.5,28.5 2.4,25 2.4,18" fill="#e84050" />
+            <polygon points="19.5,1 24.3,3.75 24.3,9.25 19.5,12 14.7,9.25 14.7,3.75" fill="#2dbe61" />
+            <text x="29" y="21" fontFamily='"ABC Diatype","Inter","Helvetica Neue",system-ui,sans-serif' fontWeight="800" fontSize="17" letterSpacing="-0.4" fill="#0f2040">eltropy</text>
+          </svg>
+          <span style={{ width:1,height:18,background:"#d9d9de" }}/>
+          <span style={{ fontSize:12,fontWeight:600,color:"#76719e" }}>Design Validation</span>
+        </div>
+        <h1 style={{ margin:0,fontSize:26,fontWeight:800,color:"#11304f" }}>Sidebar Navigation — Choose a Design</h1>
+        <p style={{ margin:"6px 0 0",fontSize:14,color:"#76719e",lineHeight:1.6 }}>
+          We're testing two different sidebar layouts. Click a design to explore it in full — then share your feedback.
+        </p>
+      </div>
+
+      <div style={{ padding:"36px 48px",display:"flex",gap:36,alignItems:"flex-start",maxWidth:1300,margin:"0 auto" }}>
+        <OptionCard id="A" label="Option A" tag="Feature-based" tagColor="#2d2759" hov={hoverA} setHov={setHoverA}/>
+        <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,paddingTop:52,flexShrink:0 }}>
+          <div style={{ width:1,height:80,background:"#d9d9de" }}/>
+          <span style={{ fontSize:13,fontWeight:700,color:"#92939e",background:"#f7f7f8",padding:"0 4px" }}>VS</span>
+          <div style={{ width:1,height:80,background:"#d9d9de" }}/>
+        </div>
+        <OptionCard id="B" label="Option B" tag="Dept-based" tagColor="#14b580" hov={hoverB} setHov={setHoverB}/>
+      </div>
+
+      <div style={{ padding:"0 48px 36px",maxWidth:1300,margin:"0 auto" }}>
+        <p style={{ fontSize:12,color:"#92939e",textAlign:"center" }}>
+          Both options include: bookmark pinning · accordion groups · collapse/expand · badge notifications · WCAG-compliant keyboard navigation
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// FULL PREVIEW WRAPPERS
+// ─────────────────────────────────────────────────────────────
+function PreviewA({ onBack }) {
+  const [pageId, setPageId] = useState("ai-assistant");
+  return (
+    <div style={{ display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden" }}>
+      <TopBar onLogoClick={onBack}/>
+      <div style={{ display:"flex",flex:1,overflow:"hidden" }}>
+        <SidebarA onItemClick={setPageId}/>
+        <PageContent activeId={pageId}/>
+      </div>
+      <BackBar onBack={onBack} label="Option A — Feature-based" color="#2d2759"/>
+    </div>
+  );
+}
+
+function PreviewB({ onBack }) {
+  const [pageId, setPageId] = useState("ai-assistant");
+  return (
+    <div style={{ display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden" }}>
+      <TopBar onLogoClick={onBack}/>
+      <div style={{ display:"flex",flex:1,overflow:"hidden" }}>
+        <SidebarB onItemClick={setPageId}/>
+        <PageContent activeId={pageId}/>
+      </div>
+      <BackBar onBack={onBack} label="Option B — Dept-based" color="#14b580"/>
+    </div>
+  );
+}
+
+function BackBar({ onBack, label, color }) {
+  return (
+    <div style={{ position:"fixed",bottom:0,left:0,right:0,height:44,background:"#11304f",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",zIndex:500 }}>
+      <button onClick={onBack} style={{ background:"transparent",border:"1px solid rgba(255,255,255,0.3)",borderRadius:6,padding:"5px 14px",color:"#fff",cursor:"pointer",fontFamily:tk.font,fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6 }}>
+        ← Back to selection
+      </button>
+      <span style={{ fontFamily:tk.font,fontSize:13,fontWeight:700,color:"#fff" }}>
+        Previewing: <span style={{ color, background:"rgba(255,255,255,0.1)",padding:"2px 10px",borderRadius:100 }}>{label}</span>
+      </span>
+      <div style={{ display:"flex",gap:8 }}>
+        <button style={{ background:"transparent",border:"1px solid rgba(255,255,255,0.3)",borderRadius:6,padding:"5px 14px",color:"rgba(255,255,255,0.6)",cursor:"pointer",fontFamily:tk.font,fontSize:12 }}>
+          Doesn't work for me
+        </button>
+        <button style={{ background:tk.orange,border:"none",borderRadius:6,padding:"5px 16px",color:"#fff",cursor:"pointer",fontFamily:tk.font,fontSize:12,fontWeight:700 }}>
+          This works ✓
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// ROOT
+// ─────────────────────────────────────────────────────────────
+function SidebarApp_inner() {
+  const [view, setView] = useState("select"); // "select" | "A" | "B"
+  if (view === "A") return <PreviewA onBack={()=>setView("select")}/>;
+  if (view === "B") return <PreviewB onBack={()=>setView("select")}/>;
+  return <SelectionPage onSelect={setView}/>;
+}
+return SidebarApp_inner;
+})();
+
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<SidebarApp />);
+</script>
+</body>
+</html>
